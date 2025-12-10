@@ -19,52 +19,37 @@ pipeline {
             }
         }
 
-        stage('Clean') {
-            steps {
-                sh """
-                    chmod +x ./mvnw
-                    ./mvnw -B clean
-                """
-            }
-        }
-        
-        stage('Compile') {
-            options {
-                timeout(time: 20, unit: 'MINUTES')
-            }
-            steps {
-                sh """
-                    export MAVEN_OPTS="-Xmx1024m -Xms512m"
-                    ./mvnw -B -T 1C compile -Dmaven.compile.fork=true
-                """
-            }
-        }
-        
-        stage('Test') {
-            when {
-                expression { params.SKIP_TESTS == false }
-            }
-            options {
-                timeout(time: 10, unit: 'MINUTES')
-            }
-            steps {
-                sh """
-                    export MAVEN_OPTS="-Xmx1024m -Xms512m"
-                    ./mvnw -B -T 1C test || echo "Tests échoués mais on continue"
-                """
-            }
-        }
-        
-        stage('Package') {
-            options {
-                timeout(time: 10, unit: 'MINUTES')
-            }
+        stage('Build & Test') {
             steps {
                 script {
                     def skipTests = params.SKIP_TESTS ? '-DskipTests -Dmaven.test.skip=true' : ''
+                    
+                    // Diagnostic système
                     sh """
-                        export MAVEN_OPTS="-Xmx1024m -Xms512m"
-                        ./mvnw -B package ${skipTests}
+                        echo "=== Diagnostic système ==="
+                        echo "Date: \$(date)"
+                        echo "CPU: \$(nproc) cores"
+                        echo "RAM: \$(free -h | grep Mem)"
+                        echo "Disk: \$(df -h / | tail -1)"
+                        echo "Java version:"
+                        java -version 2>&1 || echo "Java non trouvé"
+                        echo "========================"
+                    """
+                    
+                    sh """
+                        chmod +x ./mvnw
+                        export MAVEN_OPTS="-Xmx512m -Xms256m"
+                        echo "Démarrage du build Maven à \$(date)..."
+                        echo "Command: ./mvnw -B clean package ${skipTests}"
+                        
+                        # Utiliser package directement sans parallélisation pour éviter les problèmes
+                        ./mvnw -B clean package ${skipTests} || {
+                            echo "Build échoué, tentative sans optimisations..."
+                            ./mvnw -B clean package ${skipTests} -T 1
+                        }
+                        
+                        echo "Build terminé avec succès à \$(date)!"
+                        ls -lh target/*.jar 2>/dev/null || echo "Aucun JAR trouvé"
                     """
                 }
             }
