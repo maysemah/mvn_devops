@@ -20,22 +20,24 @@ pipeline {
     }
 
     post {
+        success {
+            echo 'Build réussi!'
+        }
         always {
             script {
-                try {
+                if (fileExists('target/surefire-reports')) {
                     junit 'target/surefire-reports/*.xml'
-                } catch (Exception e) {
-                    echo "Aucun rapport de test trouvé: ${e.message}"
+                } else {
+                    echo 'Aucun rapport de test trouvé'
                 }
             }
             script {
-                try {
+                if (fileExists('target/*.jar')) {
                     archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                } catch (Exception e) {
-                    echo "Aucun JAR trouvé: ${e.message}"
+                } else {
+                    echo 'Aucun JAR trouvé'
                 }
             }
         }
     }
 }
-
