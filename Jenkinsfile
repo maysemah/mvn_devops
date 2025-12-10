@@ -34,7 +34,7 @@ pipeline {
             }
             steps {
                 sh """
-                    export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m"
+                    export MAVEN_OPTS="-Xmx1024m -Xms512m"
                     ./mvnw -B -T 1C compile -Dmaven.compile.fork=true
                 """
             }
@@ -49,7 +49,7 @@ pipeline {
             }
             steps {
                 sh """
-                    export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m"
+                    export MAVEN_OPTS="-Xmx1024m -Xms512m"
                     ./mvnw -B -T 1C test || echo "Tests échoués mais on continue"
                 """
             }
@@ -63,7 +63,7 @@ pipeline {
                 script {
                     def skipTests = params.SKIP_TESTS ? '-DskipTests -Dmaven.test.skip=true' : ''
                     sh """
-                        export MAVEN_OPTS="-Xmx1024m -XX:MaxPermSize=256m"
+                        export MAVEN_OPTS="-Xmx1024m -Xms512m"
                         ./mvnw -B package ${skipTests}
                     """
                 }
