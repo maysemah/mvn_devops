@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     options {
-        // Fail fast on errors, keep logs concise
-        ansiColor('xterm')
+        // Garder des logs horodatés
         timestamps()
     }
 
@@ -16,7 +15,10 @@ pipeline {
 
         stage('Build & Test') {
             steps {
-                sh './mvnw -B clean verify'
+                // Activer la couleur ANSI même si l’option globale n’est pas dispo
+                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
+                    sh './mvnw -B clean verify'
+                }
             }
         }
     }
