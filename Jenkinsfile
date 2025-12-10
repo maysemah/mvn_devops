@@ -23,13 +23,23 @@ pipeline {
             steps {
                 script {
                     def skipTests = params.SKIP_TESTS ? '-DskipTests' : ''
-                    sh """
-                        chmod +x ./mvnw
-                        # -B = batch mode (non-interactif, plus rapide)
-                        # -T 1C = parallélise avec 1 thread par CPU core
-                        # package = compile + test + package (plus rapide que verify)
-                        ./mvnw -B -T 1C clean package ${skipTests}
-                    """
+                    try {
+                        sh """
+                            chmod +x ./mvnw
+                            # -B = batch mode (non-interactif, plus rapide)
+                            # -T 1C = parallélise avec 1 thread par CPU core
+                            # package = compile + test + package
+                            ./mvnw -B -T 1C clean package ${skipTests}
+                        """
+                    } catch (Exception e) {
+                        echo "Erreur lors du build: ${e.message}"
+                        // Essayer au moins de compiler et packager sans tests
+                        sh """
+                            echo "Tentative de compilation et packaging sans tests..."
+                            ./mvnw -B clean compile package -DskipTests || true
+                        """
+                        throw e
+                    }
                 }
             }
         }
