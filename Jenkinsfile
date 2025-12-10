@@ -9,23 +9,23 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                // Cloner depuis GitHub (repo public)
+                git branch: 'master', url: 'https://github.com/maysemah/mvn_devops.git'
             }
         }
 
         stage('Build & Test') {
             steps {
-                // Activer la couleur ANSI même si l’option globale n’est pas dispo
-                wrap([$class: 'AnsiColorBuildWrapper', 'colorMapName': 'xterm']) {
-                    sh './mvnw -B clean verify'
-                }
+                // Build + tests
+                sh './mvnw -B clean verify'
             }
         }
     }
 
     post {
         always {
-            junit 'target/surefire-reports/*.xml'
+            // Ne pas échouer si aucun rapport (par exemple pas de tests)
+            junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
             archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
         }
     }
