@@ -24,32 +24,19 @@ pipeline {
                 script {
                     def skipTests = params.SKIP_TESTS ? '-DskipTests -Dmaven.test.skip=true' : ''
                     
-                    // Diagnostic système
-                    sh """
-                        echo "=== Diagnostic système ==="
-                        echo "Date: \$(date)"
-                        echo "CPU: \$(nproc) cores"
-                        echo "RAM: \$(free -h | grep Mem)"
-                        echo "Disk: \$(df -h / | tail -1)"
-                        echo "Java version:"
-                        java -version 2>&1 || echo "Java non trouvé"
-                        echo "========================"
-                    """
-                    
                     sh """
                         chmod +x ./mvnw
-                        export MAVEN_OPTS="-Xmx512m -Xms256m"
-                        echo "Démarrage du build Maven à \$(date)..."
-                        echo "Command: ./mvnw -B clean package ${skipTests}"
+                        export MAVEN_OPTS="-Xmx256m -Xms128m"
+                        echo "Build démarré à \$(date)"
                         
-                        # Utiliser package directement sans parallélisation pour éviter les problèmes
-                        ./mvnw -B clean package ${skipTests} || {
-                            echo "Build échoué, tentative sans optimisations..."
-                            ./mvnw -B clean package ${skipTests} -T 1
-                        }
+                        # Build simplifié - compile puis package séparément pour éviter les timeouts
+                        ./mvnw -B clean compile ${skipTests}
+                        echo "Compilation terminée à \$(date)"
                         
-                        echo "Build terminé avec succès à \$(date)!"
-                        ls -lh target/*.jar 2>/dev/null || echo "Aucun JAR trouvé"
+                        ./mvnw -B package ${skipTests}
+                        echo "Packaging terminé à \$(date)"
+                        
+                        ls -lh target/*.jar || echo "Pas de JAR trouvé"
                     """
                 }
             }
