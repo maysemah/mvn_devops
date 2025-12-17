@@ -56,32 +56,17 @@ pipeline {
                     def imageNameLatest = "${dockerUsername}/student-management:latest"
                     
                     echo "Construction de l'image Docker: ${imageName}"
-                    try {
-                        // Essayer de pull l'image de base d'abord avec timeout augmenté
-                        sh """
-                            echo "Téléchargement de l'image de base openjdk:17-jdk-slim..."
-                            docker pull openjdk:17-jdk-slim || {
-                                echo "Échec du pull, vérification des images locales..."
-                                docker images | grep openjdk || echo "Aucune image openjdk locale trouvée"
-                                echo "Tentative avec une image alternative..."
-                                docker pull eclipse-temurin:17-jdk-alpine || echo "Échec également"
-                            }
-                        """
+                    sh """
+                        # Télécharger l'image de base si nécessaire
+                        docker pull eclipse-temurin:17-jdk-alpine || echo "Image déjà présente ou erreur réseau"
                         
-                        sh """
-                            echo "Construction de l'image Docker..."
-                            docker build -t ${imageName} . || {
-                                echo "Échec du build Docker, mais le JAR est disponible"
-                                exit 0
-                            }
-                            docker tag ${imageName} ${imageNameLatest}
-                            docker images | grep student-management || echo "Image non trouvée"
-                        """
-                    } catch (Exception e) {
-                        echo "Erreur lors de la construction Docker: ${e.message}"
-                        echo "Le JAR a été créé avec succès, l'image Docker peut être construite manuellement plus tard"
-                        // Ne pas faire échouer le build si Docker échoue
-                    }
+                        # Construire l'image Docker
+                        docker build -t ${imageName} .
+                        docker tag ${imageName} ${imageNameLatest}
+                        
+                        # Afficher les images créées
+                        docker images | grep student-management
+                    """
                 }
             }
         }
