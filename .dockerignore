@@ -1,4 +1,5 @@
-target/
+# Ne pas exclure target/ car on a besoin des fichiers .jar
+# Exclure seulement les fichiers sources et de développement
 .git/
 .gitignore
 .mvn/
@@ -9,4 +10,9 @@ mvnw.cmd
 .vscode/
 *.iml
 .DS_Store
+Dockerfile
+.dockerignore
+Jenkinsfile
+src/
+pom.xml
 

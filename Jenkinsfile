@@ -57,6 +57,17 @@ pipeline {
                     
                     echo "Construction de l'image Docker: ${imageName}"
                     sh """
+                        # Vérifier que le JAR existe
+                        if [ ! -f target/*.jar ]; then
+                            echo "ERREUR: Aucun JAR trouvé dans target/"
+                            ls -la target/ || echo "Le répertoire target/ n'existe pas"
+                            exit 1
+                        fi
+                        
+                        # Afficher les JAR disponibles
+                        echo "JAR trouvé:"
+                        ls -lh target/*.jar
+                        
                         # Télécharger l'image de base si nécessaire
                         docker pull eclipse-temurin:17-jdk-alpine || echo "Image déjà présente ou erreur réseau"
                         
@@ -65,7 +76,7 @@ pipeline {
                         docker tag ${imageName} ${imageNameLatest}
                         
                         # Afficher les images créées
-                        docker images | grep student-management
+                        docker images | grep student-management || true
                     """
                 }
             }
