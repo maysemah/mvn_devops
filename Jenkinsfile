@@ -102,25 +102,36 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                             sh """
                                 echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                                docker push ${imageName}
-                                docker push ${imageNameLatest}
+                                docker push ${imageName} || {
+                                    echo "ERREUR: Échec du push de ${imageName}"
+                                    echo "Vérifiez que le token Docker Hub a les permissions 'write' et 'delete'"
+                                    exit 1
+                                }
+                                docker push ${imageNameLatest} || {
+                                    echo "ERREUR: Échec du push de ${imageNameLatest}"
+                                    exit 1
+                                }
                             """
                         }
-                        echo "Image poussée avec succès vers Docker Hub!"
+                        echo "✅ Image poussée avec succès vers Docker Hub!"
                     } catch (Exception e) {
-                        echo "Credentials Jenkins non configurés, tentative avec docker login manuel..."
-                        // Méthode 2: Fallback - utiliser docker login si déjà connecté
-                        sh """
-                            if docker info 2>/dev/null | grep -q "Username"; then
-                                echo "Utilisation de la session Docker existante"
-                                docker push ${imageName}
-                                docker push ${imageNameLatest}
-                            else
-                                echo "ERREUR: Vous devez configurer les credentials Docker Hub dans Jenkins"
-                                echo "Ou vous connecter manuellement avec: docker login -u semahmay"
-                                exit 1
-                            fi
-                        """
+                        echo "⚠️  ERREUR lors du push vers Docker Hub: ${e.message}"
+                        echo ""
+                        echo "Solutions possibles:"
+                        echo "1. Créez un Personal Access Token (PAT) sur Docker Hub:"
+                        echo "   - Allez sur https://hub.docker.com/settings/security"
+                        echo "   - Créez un nouveau token avec les permissions 'Read, Write & Delete'"
+                        echo "   - Utilisez ce token comme mot de passe dans les credentials Jenkins"
+                        echo ""
+                        echo "2. Vérifiez que le repository '${dockerUsername}/student-management' existe sur Docker Hub"
+                        echo ""
+                        echo "3. L'image a été construite avec succès localement, vous pouvez la pousser manuellement:"
+                        echo "   docker login -u ${dockerUsername}"
+                        echo "   docker push ${imageName}"
+                        echo "   docker push ${imageNameLatest}"
+                        echo ""
+                        // Ne pas faire échouer le build car l'image a été construite avec succès
+                        currentBuild.result = 'UNSTABLE'
                     }
                 }
             }
